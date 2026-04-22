@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S. — Mark VII</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --arc: #00d4ff;
+  --arc-dim: #0088aa;
+  --arc-glow: rgba(0,212,255,0.25);
+  --gold: #ffa500;
+  --red: #ff3030;
+  --green: #00ff88;
+  --bg: #020810;
+  --panel: rgba(0,20,40,0.88);
+  --text: #c8f0ff;
+  --text-dim: #5a8fa8;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* --- ANIMATED BG --- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,212,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 80% 80%, rgba(0,80,160,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanline */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.07) 2px,
+    rgba(0,0,0,0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  padding: 16px;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+/* --- HEADER --- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--panel);
+  border: 1px solid rgba(0,212,255,0.18);
+  border-top: 2px solid var(--arc);
+  backdrop-filter: blur(12px);
+  position: relative;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--arc-dim), transparent);
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: var(--arc);
+  text-shadow: 0 0 18px rgba(0,212,255,0.8), 0 0 40px rgba(0,212,255,0.3);
+}
+
+.logo span { color: var(--gold); }
+
+.header-right { display: flex; align-items: center; gap: 20px; }
+
+.status-row { display: flex; gap: 16px; align-items: center; }
+
+.status-dot {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Share Tech Mono'; font-size: 10px; color: var(--text-dim);
+}
+.status-dot::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 2s infinite;
+}
+.status-dot.warn::before { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.status-dot.off::before { background: #555; box-shadow: none; animation: none; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#api-indicator {
+  font-family: 'Share Tech Mono'; font-size: 10px;
+  padding: 5px 12px;
+  border: 1px solid rgba(0,212,255,0.3);
+  color: var(--arc-dim);
+  background: rgba(0,212,255,0.05);
+  letter-spacing: 1px;
+}
+
+/* --- MAIN GRID --- */
+.main-content {
+  display: grid;
+  grid-template-columns: 260px 1fr 260px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* --- SIDE PANELS --- */
+.panel {
+  background: var(--panel);
+  border: 1px solid rgba(0,212,255,0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.panel-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--arc);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,212,255,0.15);
+  text-transform: uppercase;
+}
+
+/* API Config Form */
+.api-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.api-row label {
+  font-size: 10px;
+  font-family: 'Share Tech Mono';
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.api-input {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,212,255,0.2);
+  color: var(--text);
+  padding: 7px 10px;
+  font-family: 'Share Tech Mono';
+  font-size: 10px;
+  outline: none;
+  transition: border-color 0.3s;
+  width: 100%;
+}
+
+.api-input:focus { border-color: var(--arc); box-shadow: 0 0 8px var(--arc-glow); }
+
+.api-input::placeholder { color: var(--text-dim); }
+
+.save-btn {
+  background: transparent;
+  border: 1px solid var(--arc);
+  color: var(--arc);
+  padding: 7px;
+  cursor: pointer;
+  font-family: 'Orbitron';
+  font-size: 9px;
+  letter-spacing: 2px;
+  transition: 0.25s;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.save-btn:hover { background: var(--arc); color: var(--bg); }
+
+/* AI Selector */
+.ai-mode {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(0,212,255,0.2);
+  color: var(--text-dim);
+  padding: 6px;
+  font-family: 'Orbitron';
+  font-size: 8px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.ai-btn.active-claude { border-color: var(--gold); color: var(--gold); background: rgba(255,165,0,0.08); }
+.ai-btn.active-gemini { border-color: var(--arc); color: var(--arc); background: var(--arc-glow); }
+.ai-btn.active-auto { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.08); }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent);
+  margin: 4px 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: 'Share Tech Mono';
+}
+.info-row .label { color: var(--text-dim); }
+.info-row .val { color: var(--arc); }
+
+/* Right Panel */
+.stat-block {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,212,255,0.08);
+  padding: 10px;
+}
+
+.stat-label { font-size: 9px; font-family: 'Share Tech Mono'; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 4px; }
+.stat-value { font-size: 22px; font-family: 'Orbitron'; color: var(--arc); }
+.stat-unit { font-size: 9px; color: var(--text-dim); }
+
+.progress-bar {
+  height: 3px;
+  background: rgba(0,212,255,0.1);
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--arc);
+  box-shadow: 0 0 6px var(--arc);
+  transition: width 1s ease;
+}
+
+/* Daily log */
+#log-items { display: flex; flex-direction: column; gap: 6px; }
+.log-item {
+  font-size: 11px;
+  padding: 6px 8px;
+  border-left: 2px solid rgba(0,212,255,0.3);
+  color: var(--text-dim);
+}
+.log-item.done { border-color: var(--green); color: #7af0b8; }
+
+/* --- CHAT AREA --- */
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  background: rgba(0,8,16,0.6);
+  border: 1px solid rgba(0,212,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Corner decorations */
+.chat-area::before,
+.chat-area::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--arc);
+  border-style: solid;
+  z-index: 5;
+}
+.chat-area::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.chat-area::after  { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-thumb { background: var(--arc-dim); }
+.messages::-webkit-scrollbar-track { background: transparent; }
+
+.msg { display: flex; gap: 10px; max-width: 88%; animation: fadeSlide 0.3s ease; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg.jarvis { align-self: flex-start; }
+
+@keyframes fadeSlide { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+.msg-avatar {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border: 1px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron'; font-size: 8px;
+  letter-spacing: 1px;
+}
+.msg.jarvis .msg-avatar { border-color: var(--arc); color: var(--arc); background: rgba(0,212,255,0.06); }
+.msg.user .msg-avatar  { border-color: var(--gold); color: var(--gold); background: rgba(255,165,0,0.06); }
+
+.msg-content { display: flex; flex-direction: column; gap: 3px; }
+.msg-who { font-size: 9px; font-family: 'Share Tech Mono'; color: var(--text-dim); letter-spacing: 2px; }
+.msg.user .msg-who { text-align: right; }
+
+.msg-bubble {
+  padding: 10px 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  position: relative;
+}
+.msg.jarvis .msg-bubble {
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-left: 2px solid var(--arc);
+}
+.msg.user .msg-bubble {
+  background: rgba(255,165,0,0.06);
+  border: 1px solid rgba(255,165,0,0.15);
+  border-right: 2px solid var(--gold);
+  text-align: right;
+}
+
+/* Typing indicator */
+.typing-indicator { display: flex; gap: 5px; padding: 14px; }
+.typing-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--arc);
+  animation: typingAnim 1.4s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingAnim { 0%,100%{opacity:0.2; transform:scale(0.8)} 50%{opacity:1; transform:scale(1.2)} }
+
+/* --- INPUT BAR --- */
+.input-bar {
+  padding: 14px 18px;
+  background: var(--panel);
+  border-top: 1px solid rgba(0,212,255,0.1);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+#user-input {
+  flex: 1;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,212,255,0.2);
+  color: var(--text);
+  padding: 10px 14px;
+  resize: none;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  max-height: 120px;
+  transition: border-color 0.3s;
+}
+#user-input:focus { border-color: var(--arc); box-shadow: 0 0 10px var(--arc-glow); }
+#user-input::placeholder { color: var(--text-dim); }
+
+.mic-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px solid var(--arc);
+  background: transparent;
+  color: var(--arc);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: 0.3s;
+  flex-shrink: 0;
+}
+.mic-btn:hover { background: rgba(0,212,255,0.1); }
+.mic-btn.active { background: var(--red) !important; border-color: #ff8080 !important; animation: pulse 1s infinite; }
+
+.send-btn {
+  background: transparent;
+  border: 1px solid var(--arc);
+  color: var(--arc);
+  padding: 10px 20px;
+  cursor: pointer;
+  font-family: 'Orbitron';
+  font-size: 10px;
+  letter-spacing: 2px;
+  transition: 0.25s;
+  height: 44px;
+  flex-shrink: 0;
+}
+.send-btn:hover { background: var(--arc); color: var(--bg); box-shadow: 0 0 12px var(--arc-glow); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+/* --- BOTTOM BAR --- */
+.bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--panel);
+  border: 1px solid rgba(0,212,255,0.08);
+  font-family: 'Share Tech Mono';
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+#time-display { color: var(--arc); font-size: 10px; }
+
+/* Notification */
+.notif {
+  position: fixed;
+  top: 80px; right: 20px;
+  background: var(--panel);
+  border: 1px solid var(--arc);
+  border-left: 3px solid var(--arc);
+  padding: 10px 16px;
+  font-size: 11px;
+  font-family: 'Share Tech Mono';
+  color: var(--text);
+  max-width: 280px;
+  z-index: 100;
+  animation: slideIn 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+.notif.warn { border-color: var(--gold); border-left-color: var(--gold); }
+.notif.err  { border-color: var(--red); border-left-color: var(--red); }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">J.A.R.V.I.S. <span>VII</span></div>
+    <div class="status-row">
+      <div class="status-dot" id="st-claude">CLAUDE</div>
+      <div class="status-dot warn" id="st-gemini">GEMINI</div>
+      <div class="status-dot" id="st-voice">SES</div>
+    </div>
+    <div id="api-indicator">MOTOR: HAZIR</div>
+  </header>
+
+  <div class="main-content">
+
+    <!-- LEFT PANEL: API CONFIG -->
+    <div class="panel">
+      <div class="panel-title">⚙ API Yapılandırma</div>
+
+      <div class="api-row">
+        <label>ANTHROPIC CLAUDE KEY</label>
+        <input type="password" id="claude-key" class="api-input" placeholder="sk-ant-...">
+      </div>
+
+      <div class="api-row">
+        <label>GOOGLE GEMINI KEY</label>
+        <input type="password" id="gemini-key" class="api-input" placeholder="AIzaSy...">
+      </div>
+
+      <button class="save-btn" onclick="saveKeys()">▶ KAYDET & AKTİF ET</button>
+
+      <div class="divider"></div>
+
+      <div class="panel-title">⚡ AI Motoru</div>
+
+      <div class="ai-mode">
+        <button class="ai-btn active-auto" id="btn-auto" onclick="setMode('auto')">AUTO</button>
+        <button class="ai-btn" id="btn-claude" onclick="setMode('claude')">CLAUDE</button>
+        <button class="ai-btn" id="btn-gemini" onclick="setMode('gemini')">GEMINI</button>
+      </div>
+
+      <div style="font-size:10px; color:var(--text-dim); line-height:1.5; margin-top:4px;">
+        <b style="color:var(--green)">AUTO:</b> Kod→Claude, Genel→Gemini<br>
+        <b style="color:var(--gold)">CLAUDE:</b> Her zaman Claude<br>
+        <b style="color:var(--arc)">GEMINI:</b> Her zaman Gemini
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="panel-title">ℹ Sistem</div>
+      <div class="info-row"><span class="label">MODEL (Claude)</span><span class="val" id="claude-model">claude-opus-4-5</span></div>
+      <div class="info-row"><span class="label">MODEL (Gemini)</span><span class="val">gemini-1.5-flash</span></div>
+      <div class="info-row"><span class="label">MESAJ SAYISI</span><span class="val" id="msg-count">0</span></div>
+    </div>
+
+    <!-- CENTER: CHAT -->
+    <div class="chat-area">
+      <div class="messages" id="chat-box"></div>
+      <div class="input-bar">
+        <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Ses girişi">🎤</button>
+        <textarea id="user-input" placeholder="Efendim, sizi dinliyorum..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="processCommand()">GÖNDER</button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: STATS + LOG -->
+    <div class="panel">
+      <div class="panel-title">📊 Sistem İstatistikleri</div>
+
+      <div class="stat-block">
+        <div class="stat-label">YANIT SÜRESİ</div>
+        <div><span class="stat-value" id="resp-time">—</span> <span class="stat-unit">ms</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="resp-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-label">AKTİF OTURUM</div>
+        <div><span class="stat-value" id="session-time">0</span> <span class="stat-unit">dk</span></div>
+      </div>
+
+      <div class="stat-block">
+        <div class="stat-label">SON AI MOTORU</div>
+        <div style="font-family:'Orbitron';font-size:14px;color:var(--arc);margin-top:4px;" id="last-engine">—</div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="panel-title">📋 Günlük Log</div>
+      <div id="log-items">
+        <div class="log-item done">✓ Sistem başlatıldı</div>
+        <div class="log-item">• API bağlantısı bekleniyor</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottom-bar">
+    <span>STARK INDUSTRIES — IRON MAN PROTOCOL</span>
+    <span id="time-display"></span>
+    <span>JARVIS MARK VII v3.0 — <span id="ready-status" style="color:var(--gold)">ANAHTAR GEREKLİ</span></span>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  JARVIS — Gerçek API Entegrasyonu
+//  Claude (Anthropic) + Gemini (Google AI Studio)
+// ============================================================
+
+const STATE = {
+  claudeKey: '',
+  geminiKey: '',
+  mode: 'auto',         // 'auto' | 'claude' | 'gemini'
+  history: [],          // Claude multi-turn geçmişi
+  msgCount: 0,
+  sessionStart: Date.now(),
+  voiceActive: false,
+  speaking: false,
+  isLoading: false
+};
+
+// ---- Elementler ----
+const chatBox   = document.getElementById('chat-box');
+const userInput = document.getElementById('user-input');
+const sendBtn   = document.getElementById('send-btn');
+const micBtn    = document.getElementById('mic-btn');
+
+// ---- Saat ----
+function updateClock() {
+  const now = new Date();
+  document.getElementById('time-display').textContent =
+    now.toLocaleDateString('tr-TR') + '  ' + now.toLocaleTimeString('tr-TR');
+  const mins = Math.floor((Date.now() - STATE.sessionStart) / 60000);
+  document.getElementById('session-time').textContent = mins;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ---- API Keys ----
+function saveKeys() {
+  STATE.claudeKey = document.getElementById('claude-key').value.trim();
+  STATE.geminiKey = document.getElementById('gemini-key').value.trim();
+
+  let active = [];
+  if (STATE.claudeKey) {
+    active.push('Claude');
+    document.getElementById('st-claude').className = 'status-dot';
+  } else {
+    document.getElementById('st-claude').className = 'status-dot off';
+  }
+  if (STATE.geminiKey) {
+    active.push('Gemini');
+    document.getElementById('st-gemini').className = 'status-dot';
+  } else {
+    document.getElementById('st-gemini').className = 'status-dot warn';
+  }
+
+  if (active.length > 0) {
+    document.getElementById('api-indicator').textContent = 'MOTOR: ' + active.join('+') + ' AKTİF';
+    document.getElementById('ready-status').textContent = 'HAZIR';
+    document.getElementById('ready-status').style.color = 'var(--green)';
+    notify('Anahtarlar kaydedildi: ' + active.join(', '), 'ok');
+    addLog('✓ API anahtarları yüklendi');
+    addMsg('jarvis', `Sistemler aktive edildi. ${active.join(' ve ')} çekirdekleri çevrimiçi. Sizi dinliyorum, Efendim.`, 'sistem');
+    speak(`Sistemler aktive edildi. Sizi dinliyorum Efendim.`);
+  } else {
+    notify('En az bir API anahtarı giriniz.', 'warn');
+  }
+}
+
+// ---- Mode Selector ----
+function setMode(m) {
+  STATE.mode = m;
+  ['auto','claude','gemini'].forEach(x => {
+    const el = document.getElementById('btn-' + x);
+    el.className = 'ai-btn';
+    if (x === m) el.className = `ai-btn active-${x}`;
+  });
+  notify(`Mod: ${m.toUpperCase()} seçildi`);
+}
+
+// ---- Hangi AI kullanılacak? ----
+function pickEngine(text) {
+  if (STATE.mode === 'claude') return 'claude';
+  if (STATE.mode === 'gemini') return 'gemini';
+  // AUTO: kod/teknik → Claude, genel → Gemini
+  const codeKw = ['kod', 'yaz', 'fonksiyon', 'script', 'python', 'javascript', 'hata', 'debug', 'düzelt', 'program', 'class', 'api', 'sql'];
+  const lower = text.toLowerCase();
+  if (codeKw.some(k => lower.includes(k))) return 'claude';
+  return 'gemini';
+}
+
+// ---- ANA İŞLEM ----
+async function processCommand() {
+  const text = userInput.value.trim();
+  if (!text || STATE.isLoading) return;
+
+  // Hangi anahtara ihtiyacımız var?
+  const engine = pickEngine(text);
+  if (engine === 'claude' && !STATE.claudeKey) {
+    notify('Claude API anahtarı gerekli! Sol panelden ekleyin.', 'warn'); return;
+  }
+  if (engine === 'gemini' && !STATE.geminiKey) {
+    if (STATE.claudeKey) { /* Gemini yoksa Claude'a fallback */ }
+    else { notify('Gemini API anahtarı gerekli! Sol panelden ekleyin.', 'warn'); return; }
+  }
+
+  STATE.isLoading = true;
+  sendBtn.disabled = true;
+  addMsg('user', text);
+  userInput.value = '';
+  autoResize(userInput);
+  STATE.msgCount++;
+  document.getElementById('msg-count').textContent = STATE.msgCount;
+
+  // Typing indicator
+  const typingId = addTyping();
+
+  const t0 = Date.now();
+  let response = '';
+  let usedEngine = engine;
+
+  try {
+    if (engine === 'claude' && STATE.claudeKey) {
+      response = await callClaude(text);
+      usedEngine = 'CLAUDE';
+    } else if (STATE.geminiKey) {
+      response = await callGemini(text);
+      usedEngine = 'GEMINI';
+    } else {
+      response = await callClaude(text);
+      usedEngine = 'CLAUDE';
+    }
+  } catch (err) {
+    response = `Sistem anomalisi: ${err.message}`;
+    usedEngine = 'HATA';
+    notify(err.message, 'err');
+    addLog('✗ ' + err.message);
+  }
+
+  const elapsed = Date.now() - t0;
+  removeTyping(typingId);
+  addMsg('jarvis', response, usedEngine);
+  speak(response.slice(0, 200));
+
+  // Stats
+  document.getElementById('resp-time').textContent = elapsed;
+  document.getElementById('last-engine').textContent = usedEngine;
+  const barPct = Math.min(100, (elapsed / 5000) * 100);
+  document.getElementById('resp-bar').style.width = barPct + '%';
+  addLog(`✓ ${usedEngine} — ${elapsed}ms`);
+
+  STATE.isLoading = false;
+  sendBtn.disabled = false;
+}
+
+// ============================================================
+//  CLAUDE API (Anthropic)
+// ============================================================
+async function callClaude(userText) {
+  // Çoklu tur geçmişi
+  STATE.history.push({ role: 'user', content: userText });
+
+  const body = {
+    model: 'claude-opus-4-5',
+    max_tokens: 1024,
+    system: `Sen J.A.R.V.I.S. — Tony Stark'ın yapay zeka asistanısın. Türkçe yanıt ver. Kısa, net ve zeki ol. Kullanıcıya her zaman "Efendim" diye hitap et.`,
+    messages: STATE.history
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': STATE.claudeKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Claude ${res.status}: ${err?.error?.message || 'Bağlantı hatası'}`);
+  }
+
+  const data = await res.json();
+  const reply = data.content?.[0]?.text || 'Yanıt alınamadı.';
+  STATE.history.push({ role: 'assistant', content: reply });
+
+  // Geçmişi 20 mesajla sınırla (bellek)
+  if (STATE.history.length > 20) STATE.history = STATE.history.slice(-20);
+
+  return reply;
+}
+
+// ============================================================
+//  GEMINI API (Google)
+// ============================================================
+async function callGemini(userText) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${STATE.geminiKey}`;
+
+  const body = {
+    system_instruction: {
+      parts: [{ text: "Sen J.A.R.V.I.S. — Tony Stark'ın yapay zeka asistanısın. Türkçe yanıt ver. Kısa, net ve zeki ol. Kullanıcıya 'Efendim' diye hitap et." }]
+    },
+    contents: [{ parts: [{ text: userText }] }],
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Gemini ${res.status}: ${err?.error?.message || 'Bağlantı hatası'}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Yanıt alınamadı.';
+}
+
+// ============================================================
+//  SES MODÜLÜ
+// ============================================================
+let recognition = null;
+try {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRec) {
+    recognition = new SpeechRec();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    document.getElementById('st-voice').className = 'status-dot';
+
+    recognition.onresult = (e) => {
+      userInput.value = e.results[0][0].transcript;
+      micBtn.classList.remove('active');
+      STATE.voiceActive = false;
+      autoResize(userInput);
+      processCommand();
+    };
+    recognition.onerror = () => {
+      micBtn.classList.remove('active');
+      STATE.voiceActive = false;
+    };
+    recognition.onend = () => {
+      micBtn.classList.remove('active');
+      STATE.voiceActive = false;
+    };
+  }
+} catch(e) {
+  document.getElementById('st-voice').className = 'status-dot off';
+}
+
+function toggleVoice() {
+  if (!recognition) { notify('Tarayıcınız ses tanımayı desteklemiyor.', 'warn'); return; }
+  if (STATE.voiceActive) {
+    recognition.stop();
+    STATE.voiceActive = false;
+    micBtn.classList.remove('active');
+  } else {
+    recognition.start();
+    STATE.voiceActive = true;
+    micBtn.classList.add('active');
+  }
+}
+
+function speak(text) {
+  if (!text || STATE.speaking) return;
+  // Markdown/özel karakterleri temizle
+  const clean = text.replace(/[*_`#\[\]]/g, '');
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'tr-TR';
+  utt.pitch = 0.85;
+  utt.rate = 1.05;
+  utt.onend = () => { STATE.speaking = false; };
+  STATE.speaking = true;
+  window.speechSynthesis.speak(utt);
+}
+
+// ============================================================
+//  UI HELPERS
+// ============================================================
+function addMsg(who, text, engine) {
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${who}`;
+
+  const initials = who === 'jarvis' ? 'J.A.R' : 'SİZ';
+  const who_label = who === 'jarvis' ? (engine ? `JARVIS [${engine}]` : 'JARVIS') : 'KULLANICI';
+
+  // Basit markdown: **bold** ve satır sonu
+  const html = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+
+  wrap.innerHTML = `
+    <div class="msg-avatar">${initials}</div>
+    <div class="msg-content">
+      <div class="msg-who">${who_label}</div>
+      <div class="msg-bubble">${html}</div>
+    </div>`;
+
+  chatBox.appendChild(wrap);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return wrap;
+}
+
+let typingCounter = 0;
+function addTyping() {
+  const id = 'typing-' + (++typingCounter);
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = 'msg jarvis';
+  el.innerHTML = `
+    <div class="msg-avatar">J.A.R</div>
+    <div class="msg-content">
+      <div class="msg-who">JARVIS [İŞLEMDE]</div>
+      <div class="msg-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>`;
+  chatBox.appendChild(el);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function addLog(text) {
+  const logItems = document.getElementById('log-items');
+  const item = document.createElement('div');
+  item.className = 'log-item' + (text.startsWith('✓') ? ' done' : '');
+  const time = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  item.textContent = `[${time}] ${text}`;
+  logItems.appendChild(item);
+  if (logItems.children.length > 8) logItems.removeChild(logItems.firstChild);
+}
+
+function notify(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'notif' + (type === 'warn' ? ' warn' : type === 'err' ? ' err' : '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    processCommand();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ---- Başlangıç ----
+window.onload = () => {
+  addMsg('jarvis', 'Sistemler yüklendi. Sol panelden API anahtarlarınızı ekleyerek motorları aktive edin. Hazır olduğumda sizi dinleyeceğim, Efendim.');
+};
+</script>
+</body>
+</html>
