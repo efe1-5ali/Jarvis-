@@ -2,7 +2,7 @@
   "name": "Blok Macera",
   "short_name": "BlokMacera",
   "description": "Bloklu dünyada koş, zıpla, canavarlardan kaç, altınları topla!",
-  "start_url": "./blok-macera.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
